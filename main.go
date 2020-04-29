@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"net"
@@ -239,13 +241,34 @@ func serveHTTP(rw http.ResponseWriter, r *http.Request) {
 			respondWith(rw, err, http.StatusForbidden)
 			return
 		}
+		//q := getQuerySnippet(r)
+		//fmt.Println(q)
+		//b := ioutil.NopCloser(strings.NewReader(q))
+		//r.Body = b
+		Req := r
+		NewReq := new(http.Request)
+		if err := deepCopy(NewReq, Req); err != nil {
+			log.Errorf(err.Error())
+		}
+		fmt.Printf("PcInfo Pc1:%v, Pc2:%v\n", Req, NewReq)
 		proxy.ServeHTTP(rw, r)
+
 	default:
 		badRequest.Inc()
 		err := fmt.Errorf("%q: unsupported path: %q", r.RemoteAddr, r.URL.Path)
 		rw.Header().Set("Connection", "close")
 		respondWith(rw, err, http.StatusBadRequest)
 	}
+}
+
+func deepCopy(dst, src interface{}) error {
+	//deepcopy.Interface()
+	//gob.Register(http.Request{Body: interface{}})
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
+		return err
+	}
+	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
 }
 
 func loadConfig() (*config.Config, error) {

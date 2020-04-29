@@ -33,6 +33,23 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/v2pro/plz v0.0.0-20180227161703-2d49b86ea382
+## explicit
+github.com/v2pro/plz
+github.com/v2pro/plz/concurrent
+github.com/v2pro/plz/countlog
+github.com/v2pro/plz/countlog/loglog
+github.com/v2pro/plz/countlog/output
+github.com/v2pro/plz/countlog/output/hrf
+github.com/v2pro/plz/countlog/spi
+github.com/v2pro/plz/countlog/stats
+github.com/v2pro/plz/gls
+github.com/v2pro/plz/msgfmt
+github.com/v2pro/plz/msgfmt/jsonfmt
+github.com/v2pro/plz/parse
+github.com/v2pro/plz/parse/read
+github.com/v2pro/plz/parse/skip
+github.com/v2pro/plz/reflect2
 # golang.org/x/crypto v0.0.0-20200109152110-61a87790db17
 ## explicit
 golang.org/x/crypto/acme
