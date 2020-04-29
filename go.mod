@@ -1,6 +1,6 @@
-module github.com/Vertamedia/chproxy
+module github.com/richard403/chproxy
 
-go 1.13
+go 1.14
 
 require (
 	github.com/DataDog/zstd v1.4.4

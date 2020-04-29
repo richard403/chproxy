@@ -14,8 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Vertamedia/chproxy/config"
-	"github.com/Vertamedia/chproxy/log"
+	"github.com/richard403/chproxy/config"
+	"github.com/richard403/chproxy/log"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -41,6 +41,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	proxy.rp.ErrorLog.SetOutput(os.Stderr)
 	log.Infof("%s", versionString())
 	log.Infof("Loading config: %s", *configFile)
 	cfg, err := loadConfig()
