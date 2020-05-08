@@ -172,9 +172,10 @@ func (rp *reverseProxy) proxyRequest(s *scope, rw http.ResponseWriter, srw *stat
 
 	rp.rp.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, e error) {
 		retries := GetRetryFromContext(req)
+		log.Errorf("proxy错误[%s]， %s\n", s.host.addr, e.Error())
 		if retries < 3 {
 			select {
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(50 * time.Millisecond):
 				ctx := context.WithValue(req.Context(), Retry, retries+1)
 				rp.snedProxy(rw, req.WithContext(ctx), srw, s, timeoutErrMsg)
 				//proxy.rp.ServeHTTP(rw, req.WithContext(ctx))
