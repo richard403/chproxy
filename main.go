@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -34,6 +36,8 @@ var (
 	allowedNetworksMetrics atomic.Value
 )
 
+const Retry = 1
+
 func main() {
 	flag.Parse()
 	if *version {
@@ -43,6 +47,7 @@ func main() {
 
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 48
 	proxy.rp.ErrorLog.SetOutput(os.Stderr)
+	//proxy.rp.Transport.(*http.Transport).MaxIdleConnsPerHost = 48
 	log.Infof("%s", versionString())
 	log.Infof("Loading config: %s", *configFile)
 	cfg, err := loadConfig()
@@ -240,13 +245,26 @@ func serveHTTP(rw http.ResponseWriter, r *http.Request) {
 			respondWith(rw, err, http.StatusForbidden)
 			return
 		}
+
 		proxy.ServeHTTP(rw, r)
+
 	default:
 		badRequest.Inc()
 		err := fmt.Errorf("%q: unsupported path: %q", r.RemoteAddr, r.URL.Path)
 		rw.Header().Set("Connection", "close")
 		respondWith(rw, err, http.StatusBadRequest)
 	}
+}
+
+func copyHttpReq(oldReq *http.Request) *http.Request {
+	var newReq *http.Request
+	newReq = oldReq.Clone(context.TODO())
+	//*newReq = *oldReq
+	var b bytes.Buffer
+	b.ReadFrom(oldReq.Body)
+	oldReq.Body = ioutil.NopCloser(&b)
+	newReq.Body = ioutil.NopCloser(bytes.NewReader(b.Bytes()))
+	return newReq
 }
 
 func loadConfig() (*config.Config, error) {

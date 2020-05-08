@@ -10,12 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/richard403/chproxy/cache"
 	"github.com/richard403/chproxy/config"
 	"github.com/richard403/chproxy/log"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
+//const Retry = 1
 type reverseProxy struct {
 	rp *httputil.ReverseProxy
 
@@ -167,10 +168,37 @@ func (rp *reverseProxy) proxyRequest(s *scope, rw http.ResponseWriter, srw *stat
 
 	req = req.WithContext(ctx)
 
-	startTime := time.Now()
-	rp.rp.ServeHTTP(rw, req)
+	rp.snedProxy(rw, req, srw, s, timeoutErrMsg)
 
-	err := ctx.Err()
+	rp.rp.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, e error) {
+		retries := GetRetryFromContext(req)
+		log.Errorf("proxy错误[%s]， %s\n", s.host.addr, e.Error())
+		if retries < 3 {
+			select {
+			case <-time.After(50 * time.Millisecond):
+				ctx := context.WithValue(req.Context(), Retry, retries+1)
+				rp.snedProxy(rw, req.WithContext(ctx), srw, s, timeoutErrMsg)
+				//proxy.rp.ServeHTTP(rw, req.WithContext(ctx))
+				log.Errorf("重试: ", retries+1)
+			}
+			return
+		}
+	}
+}
+
+func GetRetryFromContext(r *http.Request) int {
+	if retry, ok := r.Context().Value(Retry).(int); ok {
+		return retry
+	}
+	return 0
+}
+
+func (rp *reverseProxy) snedProxy(rw http.ResponseWriter, req *http.Request, srw *statResponseWriter, s *scope, timeoutErrMsg error) {
+	startTime := time.Now()
+	reverseProxy := rp.rp
+	reverseProxy.ServeHTTP(rw, req)
+
+	err := req.Context().Err()
 	switch err {
 	case nil:
 		// The request has been successfully proxied.
