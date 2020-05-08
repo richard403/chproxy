@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -33,6 +35,8 @@ var (
 	allowedNetworksHTTPS   atomic.Value
 	allowedNetworksMetrics atomic.Value
 )
+
+const Retry = 1
 
 func main() {
 	flag.Parse()
@@ -242,10 +246,7 @@ func serveHTTP(rw http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//newReq := copyHttpReq(r)
-		//fmt.Printf("PcInfo Pc1:%v, Pc2:%v\n", r, newReq)
 		proxy.ServeHTTP(rw, r)
-		//proxy.ServeHTTP(rw, newReq)
 
 	default:
 		badRequest.Inc()
@@ -255,26 +256,16 @@ func serveHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//func copyHttpReq(oldReq *http.Request) *http.Request {
-//	var newReq *http.Request
-//	newReq = oldReq.Clone(context.TODO())
-//	//*newReq = *oldReq
-//	var b bytes.Buffer
-//	b.ReadFrom(oldReq.Body)
-//	//oldReq.Body = ioutil.NopCloser(&b)
-//	newReq.Body = ioutil.NopCloser(bytes.NewReader(b.Bytes()))
-//	return newReq
-//}
-
-//func deepCopy(dst, src interface{}) error {
-//	//deepcopy.Interface()
-//	//gob.Register(http.Request{Body: interface{}})
-//	var buf bytes.Buffer
-//	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-//		return err
-//	}
-//	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
-//}
+func copyHttpReq(oldReq *http.Request) *http.Request {
+	var newReq *http.Request
+	newReq = oldReq.Clone(context.TODO())
+	//*newReq = *oldReq
+	var b bytes.Buffer
+	b.ReadFrom(oldReq.Body)
+	oldReq.Body = ioutil.NopCloser(&b)
+	newReq.Body = ioutil.NopCloser(bytes.NewReader(b.Bytes()))
+	return newReq
+}
 
 func loadConfig() (*config.Config, error) {
 	if *configFile == "" {
