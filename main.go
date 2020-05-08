@@ -41,6 +41,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 48
 	proxy.rp.ErrorLog.SetOutput(os.Stderr)
 	log.Infof("%s", versionString())
 	log.Infof("Loading config: %s", *configFile)
